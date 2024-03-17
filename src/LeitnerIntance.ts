@@ -7,9 +7,9 @@ import { User } from 'lucia';
 const BOX_A_PROB: number = 0.8;
 const BOX_LIMIT: number = 50;
 
-// If the user solves a puzzle in Box A in < 3 seconds, we can remove it
+// If the user solves a puzzle in Box A in < 2 seconds per move, we can remove it
 // immediately from system (i.e. promote it twice).
-const TIME_THRESHOLD: number = 3;
+const TIME_THRESHOLD: number = 2;
 
 interface LeitnerInstance {
   boxA: Array<Puzzle>;

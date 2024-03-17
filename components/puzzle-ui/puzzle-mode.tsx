@@ -13,11 +13,7 @@ interface PuzzleModeProps {
 }
 
 export const PuzzleContext = React.createContext({
-  submitNextPuzzle: (
-    _success: boolean,
-    _prv: Rating,
-    _time: number
-  ): Promise<Rating> => {
+  submitNextPuzzle: (_success: boolean, _time: number): Promise<Rating> => {
     throw new Error();
   },
   getNextPuzzle: () => {},
@@ -67,19 +63,13 @@ const PuzzleMode: React.FC<PuzzleModeProps> = ({
   }, [puzzle]);
 
   // submit the puzzle success/failure to the server
-  const submitNextPuzzle = (
-    success: boolean,
-    prv: Rating,
-    time: number
-  ): Promise<Rating> =>
+  const submitNextPuzzle = (success: boolean, time: number): Promise<Rating> =>
     fetch(`/api/puzzle/submit`, {
       method: 'POST',
       body: JSON.stringify({
-        puzzle_: puzzle,
-        success_: success,
-        prv_: prv,
+        successStr: success,
         themeGroupStr: group,
-        time: time,
+        timeStr: time,
       }),
     })
       .then((response) => response.text())

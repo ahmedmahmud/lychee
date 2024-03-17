@@ -22,9 +22,8 @@ const WoodPeckerMode: React.FC<WoodpeckerModeProps> = ({
 
   const submitNextPuzzle = (
     _success: boolean,
-    _prv: Rating,
-    _t: number
-  ): Promise<Rating> => Promise.resolve(_prv);
+    _time: number
+  ): Promise<Rating> => Promise.resolve(initialRating);
 
   const getNextPuzzle = () => {
     if (puzzles.length === 1) {
