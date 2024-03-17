@@ -3,12 +3,7 @@ import { Puzzle } from '../types/lichess-api';
 //import { puzzleFromDocument } from "../app/api/puzzle/nextPuzzle/nextFor";
 import similarity_distance from '../src/similarity';
 import { SimilarityColl } from '../models/SimilarityColl';
-import { AllRoundColl } from '@/models/AllRoundColl';
-import { getExistingUserRatingByName } from './rating/getRating';
-import {
-  clampRating,
-  getUserSolvedPuzzleIDs,
-} from '@/app/api/puzzle/nextPuzzle/nextFor';
+import { getUserSolvedPuzzleIDs } from '@/app/api/puzzle/nextPuzzle/nextFor';
 import { User } from 'lucia';
 
 const cache_size = 30;

@@ -1,18 +1,69 @@
+import { Puzzle } from '@/types/lichess-api';
 import GameResult from './GameResult';
-import Rating from './GlickoV2Rating';
+import GlickoRating from './GlickoV2Rating';
+import { Rating, getPuzzleRating } from './getRating';
+
+const REVIEW_SCALING_FACTOR = 0.7;
+
+// If the puzzle was a review, we scale the rating change by 70%.
+// We apply this both to user's overrall rating and to theme ratings.
+// TODO: This also reduces rating decrease for failed reviews (the idea being
+// not to penalise a user being bad at something), but one can argue that
+// we should be harsher instead on a failed review.
+// TODO: Should we scale the rating deviation and volatility as well? Not
+// sure how safe it is to solely scale the rating.
+const scaleRatingDelta = (oldRating: number, newGlicko: GlickoRating): void => {
+  const delta = newGlicko.rating - oldRating;
+  newGlicko.rating = oldRating + REVIEW_SCALING_FACTOR * delta;
+};
+
+const toGlickoRating = (rating: Rating): GlickoRating =>
+  new GlickoRating(
+    rating.rating,
+    rating.ratingDeviation,
+    rating.volatility,
+    rating.numberOfResults
+  );
+
+const updateAndScaleRatings = (
+  userRating: Rating,
+  puzzle: Puzzle,
+  success: boolean,
+  isReview: boolean
+): void => {
+  const oldRating = userRating.rating;
+  const userGlicko = toGlickoRating(userRating);
+  if (success) {
+    new RatingCalculator().updateRatings(
+      new GameResult(userGlicko, toGlickoRating(getPuzzleRating(puzzle)))
+    );
+  } else {
+    new RatingCalculator().updateRatings(
+      new GameResult(toGlickoRating(getPuzzleRating(puzzle)), userGlicko)
+    );
+  }
+  if (isReview) {
+    scaleRatingDelta(oldRating, userGlicko);
+  }
+  userRating.rating = userGlicko.rating;
+  userRating.ratingDeviation = userGlicko.ratingDeviation;
+  userRating.volatility = userGlicko.volatility;
+  userRating.numberOfResults = userGlicko.numberOfResults;
+};
 
 const CONVERGENCE_TOLERANCE: number = 0.000001;
 const ITERATION_MAX: number = 1000;
 
 // TODO(sm3421): https://github.com/lichess-org/lila/blob/master/modules/puzzle/src/main/PuzzleFinisher.scala#L200.
-export default class RatingCalculator {
+// export for sake of testing.
+export class RatingCalculator {
   constructor(private tau: number = 0.75) {}
 
   updateRatings(
     result: GameResult,
     skipDeviationIncrease: boolean = false
   ): void {
-    const players: Rating[] = result.players();
+    const players: GlickoRating[] = result.players();
     players.forEach((player) => {
       this.calculateNewRating(player, [result], skipDeviationIncrease ? 0 : 1);
     });
@@ -20,7 +71,7 @@ export default class RatingCalculator {
   }
 
   private calculateNewRating(
-    player: Rating,
+    player: GlickoRating,
     results: GameResult[],
     elapsedRatingPeriods: number
   ): void {
@@ -121,7 +172,7 @@ export default class RatingCalculator {
     );
   }
 
-  private vOf(player: Rating, results: GameResult[]): number {
+  private vOf(player: GlickoRating, results: GameResult[]): number {
     let v = 0.0;
     results.forEach((result) => {
       v +=
@@ -144,11 +195,14 @@ export default class RatingCalculator {
     return 1 / v;
   }
 
-  private deltaOf(player: Rating, results: GameResult[]): number {
+  private deltaOf(player: GlickoRating, results: GameResult[]): number {
     return this.vOf(player, results) * this.outcomeBasedRating(player, results);
   }
 
-  private outcomeBasedRating(player: Rating, results: GameResult[]): number {
+  private outcomeBasedRating(
+    player: GlickoRating,
+    results: GameResult[]
+  ): number {
     let outcomeBasedRating = 0;
     results.forEach((result) => {
       outcomeBasedRating +=
@@ -173,3 +227,5 @@ export default class RatingCalculator {
     );
   }
 }
+
+export default updateAndScaleRatings;

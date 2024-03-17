@@ -15,7 +15,7 @@ import './puzzle-board-ui.css';
 import RatingComponent from './controls/rating';
 import DisplayBox from './controls/display-box';
 import useTimer from '@/hooks/useTimer';
-import { RatingHolder } from '@/src/rating/getRating';
+import { Rating } from '@/src/rating/getRating';
 import { Button } from '../ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import StaticBoard from './static-board';
@@ -23,7 +23,7 @@ import PuzzleHintBox from './controls/puzzle-hint';
 
 interface PuzzleBoardProps {
   puzzle?: Puzzle;
-  initialRating: RatingHolder;
+  initialRating: Rating;
   loading: boolean;
   similar?: Puzzle[];
 }
@@ -56,7 +56,7 @@ const PuzzleBoard: React.FC<PuzzleBoardProps> = ({
   const [fens, setFens] = useState([game.fen()]);
 
   // user's rating
-  const [rating, setRating] = useState<RatingHolder>(initialRating);
+  const [rating, setRating] = useState<Rating>(initialRating);
 
   // timer/stopwatch
   const [time, startTimer, stopTimer] = useTimer();

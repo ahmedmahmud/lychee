@@ -1,24 +1,24 @@
-import Rating from './GlickoV2Rating';
+import GlickoRating from './GlickoV2Rating';
 
 export default class GameResult {
   constructor(
-    public winner: Rating,
-    public loser: Rating
+    public winner: GlickoRating,
+    public loser: GlickoRating
   ) {}
 
-  players(): Rating[] {
+  players(): GlickoRating[] {
     return [this.winner, this.loser];
   }
 
-  participated(player: Rating): boolean {
+  participated(player: GlickoRating): boolean {
     return player === this.winner || player === this.loser;
   }
 
-  getScore(player: Rating): number {
+  getScore(player: GlickoRating): number {
     return this.winner === player ? 1.0 : 0.0;
   }
 
-  getOpponent(player: Rating): Rating {
+  getOpponent(player: GlickoRating): GlickoRating {
     return this.winner === player ? this.loser : this.winner;
   }
 }

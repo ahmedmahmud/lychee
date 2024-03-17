@@ -1,11 +1,12 @@
+import { DEFAULT_RATING } from './getRating';
+
 const MULTIPLIER: number = 173.7178;
-const DEFAULT_RATING: number = 1500.0;
 
 const convertRatingToOriginalGlickoScale = (r: number): number =>
-  r * MULTIPLIER + DEFAULT_RATING;
+  r * MULTIPLIER + DEFAULT_RATING.rating;
 
 const convertRatingToGlicko2Scale = (r: number): number =>
-  (r - DEFAULT_RATING) / MULTIPLIER;
+  (r - DEFAULT_RATING.rating) / MULTIPLIER;
 
 const convertRatingDeviationToOriginalGlickoScale = (r: number): number =>
   r * MULTIPLIER;
@@ -13,7 +14,7 @@ const convertRatingDeviationToOriginalGlickoScale = (r: number): number =>
 const convertRatingDeviationToGlicko2Scale = (r: number): number =>
   r / MULTIPLIER;
 
-export default class Rating {
+export default class GlickoRating {
   constructor(
     public rating: number,
     public ratingDeviation: number,

@@ -1,6 +1,6 @@
-import RatingCalculator from '../../src/rating/RatingCalculator';
+import { RatingCalculator } from '../../src/rating/RatingCalculator';
 import GameResult from '../../src/rating/GameResult';
-import Rating from '../../src/rating/GlickoV2Rating';
+import GlickoRating from '../../src/rating/GlickoV2Rating';
 
 const INT_EPSILON = -0.5;
 
@@ -10,12 +10,12 @@ const glicko = (
   rating: number,
   deviation: number,
   volatility: number
-): Rating => new Rating(rating, deviation, volatility, 0);
+): GlickoRating => new GlickoRating(rating, deviation, volatility, 0);
 
 describe('Testing Glicko rating calculation', () => {
   test('Two default deviations, same rating', () => {
-    const r1: Rating = glicko(1500.0, 500.0, 0.09);
-    const r2: Rating = glicko(1500.0, 500.0, 0.09);
+    const r1: GlickoRating = glicko(1500.0, 500.0, 0.09);
+    const r2: GlickoRating = glicko(1500.0, 500.0, 0.09);
 
     ratingCalculator.updateRatings(new GameResult(r1, r2));
 
@@ -33,8 +33,8 @@ describe('Testing Glicko rating calculation', () => {
   });
 
   test('Two low deviations, same ratings', () => {
-    const r1: Rating = glicko(1500.0, 80, 0.06);
-    const r2: Rating = glicko(1500.0, 80, 0.06);
+    const r1: GlickoRating = glicko(1500.0, 80, 0.06);
+    const r2: GlickoRating = glicko(1500.0, 80, 0.06);
 
     ratingCalculator.updateRatings(new GameResult(r1, r2));
 
@@ -52,8 +52,8 @@ describe('Testing Glicko rating calculation', () => {
   });
 
   test('Slightly different ratings and deviations', () => {
-    const r1: Rating = glicko(1400, 79, 0.06);
-    const r2: Rating = glicko(1550, 110, 0.065);
+    const r1: GlickoRating = glicko(1400, 79, 0.06);
+    const r2: GlickoRating = glicko(1550, 110, 0.065);
 
     ratingCalculator.updateRatings(new GameResult(r1, r2));
 
@@ -72,8 +72,8 @@ describe('Testing Glicko rating calculation', () => {
 
   // TODO(sm3421): Work out why this test is worse than others, then reduce epsilon.
   test('Greatly different ratings and deviations - lower wins', () => {
-    const r1: Rating = glicko(1200, 60, 0.053);
-    const r2: Rating = glicko(1850, 200, 0.062);
+    const r1: GlickoRating = glicko(1200, 60, 0.053);
+    const r2: GlickoRating = glicko(1850, 200, 0.062);
 
     ratingCalculator.updateRatings(new GameResult(r1, r2));
 
@@ -88,8 +88,8 @@ describe('Testing Glicko rating calculation', () => {
   });
 
   test('Greatly different ratings and deviations - higher wins', () => {
-    const r1: Rating = glicko(1200, 60, 0.053);
-    const r2: Rating = glicko(1850, 200, 0.062);
+    const r1: GlickoRating = glicko(1200, 60, 0.053);
+    const r2: GlickoRating = glicko(1850, 200, 0.062);
 
     ratingCalculator.updateRatings(new GameResult(r2, r1));
 

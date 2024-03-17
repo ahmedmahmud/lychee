@@ -6,10 +6,10 @@ import WoodPeckerMode from './woodpecker-mode';
 import WoodLoadingBoard from './loading';
 import './loader.css';
 import { cn } from '@/lib/utils';
-import { RatingHolder } from '@/src/rating/getRating';
+import { Rating } from '@/src/rating/getRating';
 
 interface Props {
-  rating: RatingHolder;
+  rating: Rating;
 }
 
 const colWrapperStyle = {

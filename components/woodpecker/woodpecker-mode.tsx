@@ -4,11 +4,11 @@ import { Puzzle } from '@/types/lichess-api';
 import React, { CSSProperties, useState } from 'react';
 import PuzzleBoard from '../puzzle-ui/puzzle-board';
 import { PuzzleContext } from '../puzzle-ui/puzzle-mode';
-import { RatingHolder } from '@/src/rating/getRating';
+import { Rating } from '@/src/rating/getRating';
 
 interface WoodpeckerModeProps {
   initialPuzzles: Puzzle[];
-  initialRating: RatingHolder;
+  initialRating: Rating;
   callback: () => void;
 }
 
@@ -22,9 +22,9 @@ const WoodPeckerMode: React.FC<WoodpeckerModeProps> = ({
 
   const submitNextPuzzle = (
     _success: boolean,
-    _prv: RatingHolder,
+    _prv: Rating,
     _t: number
-  ): Promise<RatingHolder> => Promise.resolve(_prv);
+  ): Promise<Rating> => Promise.resolve(_prv);
 
   const getNextPuzzle = () => {
     if (puzzles.length === 1) {

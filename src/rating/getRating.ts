@@ -1,37 +1,40 @@
 import { RatingColl } from '@/models/RatingColl';
 import { Puzzle } from '@/types/lichess-api';
 import { User } from 'lucia';
-import Rating from './GlickoV2Rating';
 import { UserThemeColl } from '@/models/UserThemeColl';
 import { isIrrelevant } from '@/app/api/puzzle/nextPuzzle/themeGenerator';
 
-export type RatingHolder = {
+export type Rating = {
   rating: number;
   ratingDeviation: number;
   volatility: number;
   numberOfResults: number;
 };
 
-const DEFAULT_VOLATILITY: number = 0.09;
-
-// Default, provisional rating.
-export const getDefaultRating = () =>
-  new Rating(1500, 350, DEFAULT_VOLATILITY, 0);
+export const DEFAULT_RATING: Rating = {
+  rating: 1500,
+  ratingDeviation: 350,
+  volatility: 0.09,
+  numberOfResults: 0,
+};
 
 // Retrieve all data (execept volatility which isn't public) from Lichess API.
 export const fetchLichessRating = async (user: User): Promise<Rating> => {
   const { perfs } = await fetch(
     `https://lichess.org/api/user/${user?.username}`
   ).then((res) => res.json());
-
   // If the user has solved no puzzles, use the default, provisional rating.
   if (!perfs.puzzle) {
-    return getDefaultRating();
+    return DEFAULT_RATING;
   }
-
   const { games, rating, rd, _ } = perfs.puzzle;
   // Use default volatility since actual is not public.
-  return new Rating(rating, rd, DEFAULT_VOLATILITY, games);
+  return {
+    rating: rating,
+    ratingDeviation: rd,
+    volatility: DEFAULT_RATING.volatility,
+    numberOfResults: games,
+  };
 };
 
 // Gets a user's rating from through the collection.
@@ -39,47 +42,22 @@ export const fetchLichessRating = async (user: User): Promise<Rating> => {
 export const getExistingUserRating = async (user: User): Promise<Rating> =>
   RatingColl.findOne({ username: user.username }).then(async (result) => {
     if (result) {
-      return new Rating(
-        result.rating,
-        result.ratingDeviation,
-        result.volatility,
-        result.numberOfResults
-      );
+      return {
+        rating: result.rating,
+        ratingDeviation: result.ratingDeviation,
+        volatility: result.volatility,
+        numberOfResults: result.numberOfResults,
+      };
     }
     throw new Error('User not present in rating collection.');
   });
 
-export const getExistingUserRatingByName = async (
-  username: string
-): Promise<Rating> =>
-  RatingColl.findOne({ username: username }).then(async (result) => {
-    if (result) {
-      return new Rating(
-        result.rating,
-        result.ratingDeviation,
-        result.volatility,
-        result.numberOfResults
-      );
-    }
-    throw new Error('User not present in rating collection.');
-  });
-
-export const getPuzzleRating = (puzzle: Puzzle): Rating =>
-  new Rating(
-    puzzle.Rating,
-    puzzle.RatingDeviation,
-    DEFAULT_VOLATILITY, // Actual volatility not in Lichess' puzzle collection.
-    puzzle.NbPlays
-  );
-
-export const toHolder = (v: Rating): RatingHolder => {
-  return {
-    rating: v.rating,
-    ratingDeviation: v.ratingDeviation,
-    volatility: v.volatility,
-    numberOfResults: v.numberOfResults,
-  };
-};
+export const getPuzzleRating = (puzzle: Puzzle): Rating => ({
+  rating: puzzle.Rating,
+  ratingDeviation: puzzle.RatingDeviation,
+  volatility: DEFAULT_RATING.volatility, // Actual volatility not in Lichess' puzzle collection.
+  numberOfResults: puzzle.NbPlays,
+});
 
 export const getThemeRatings = async (
   user: User,
@@ -94,15 +72,12 @@ export const getThemeRatings = async (
     if (filterOutIrrelevant && isIrrelevant(document.theme)) {
       return;
     }
-    map.set(
-      document.theme,
-      new Rating(
-        document.rating,
-        document.ratingDeviation,
-        document.volatility,
-        document.numberOfResults
-      )
-    );
+    map.set(document.theme, {
+      rating: document.rating,
+      ratingDeviation: document.ratingDeviation,
+      volatility: document.volatility,
+      numberOfResults: document.numberOfResults,
+    });
   });
   return map;
 };

@@ -1,8 +1,7 @@
 import {
-  RatingHolder,
+  Rating,
   getExistingUserRating,
   getThemeRatings,
-  toHolder,
 } from '@/src/rating/getRating';
 import { User } from 'lucia';
 import { RatingHistory } from '@/models/RatingHistory';
@@ -19,7 +18,7 @@ type RatingHistory = {
 export type ThemeData = {
   theme: string;
   ratings: RatingHistory[];
-  rating: RatingHolder;
+  rating: Rating;
   delta: number;
   nb: number;
 };
@@ -53,7 +52,7 @@ export const getThemes = async (
       data.push({
         theme: k,
         ratings: ratingHistories[k],
-        rating: toHolder(v),
+        rating: v,
         delta: streak,
         nb: v.numberOfResults,
       });
@@ -95,7 +94,7 @@ export const ratingHistory = async (user: User) => {
   });
   return {
     ratings: ratings,
-    rating: toHolder(userRating),
+    rating: userRating,
     delta: calculateStreak(ratings),
   };
 };

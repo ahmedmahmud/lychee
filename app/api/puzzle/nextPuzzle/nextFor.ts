@@ -1,6 +1,6 @@
 import { AllRoundColl } from '@/models/AllRoundColl';
 import {
-  RatingHolder,
+  Rating,
   getExistingUserRating,
   getThemeRatings,
 } from '@/src/rating/getRating';
@@ -9,7 +9,6 @@ import { User } from 'lucia';
 import mongoose from 'mongoose';
 import sm2RandomThemeFromRatingMap from '../../../../src/sm2';
 import frequentiallyRandomTheme, { isIrrelevant } from './themeGenerator';
-import Rating from '@/src/rating/GlickoV2Rating';
 import { ActivePuzzleColl } from '@/models/ActivePuzzle';
 import { booleanWithProbability, toGroupId } from '@/lib/utils';
 import {
@@ -27,7 +26,7 @@ const MIN_CANDIDATES: number = 10; // TODO: Increase this.
 
 export type PuzzleWithUserRating = {
   puzzle: Puzzle | undefined;
-  rating: RatingHolder;
+  rating: Rating;
   similar?: Puzzle[];
 };
 
@@ -170,13 +169,7 @@ const nextPuzzleFor = async (
   woodpecker: boolean = false,
   themeGroup: string[] = []
 ): Promise<PuzzleWithUserRating> =>
-  getExistingUserRating(user).then(async (userRating) => {
-    const rating = {
-      rating: userRating.rating,
-      ratingDeviation: userRating.ratingDeviation,
-      volatility: userRating.volatility,
-      numberOfResults: userRating.numberOfResults,
-    };
+  getExistingUserRating(user).then(async (rating) => {
     const group = themeGroup.length > 0 ? toGroupId(themeGroup) : undefined;
 
     if (!woodpecker) {

@@ -3,11 +3,11 @@ import { Puzzle } from '@/types/lichess-api';
 import React, { useState, useEffect } from 'react';
 import PuzzleBoard from './puzzle-board';
 import { PuzzleWithUserRating } from '@/app/api/puzzle/nextPuzzle/nextFor';
-import { RatingHolder } from '@/src/rating/getRating';
+import { Rating } from '@/src/rating/getRating';
 
 interface PuzzleModeProps {
   initialPuzzle: Puzzle | undefined;
-  initialRating: RatingHolder;
+  initialRating: Rating;
   initialSimilar: Puzzle[] | undefined;
   group: string[];
 }
@@ -15,9 +15,9 @@ interface PuzzleModeProps {
 export const PuzzleContext = React.createContext({
   submitNextPuzzle: (
     _success: boolean,
-    _prv: RatingHolder,
+    _prv: Rating,
     _time: number
-  ): Promise<RatingHolder> => {
+  ): Promise<Rating> => {
     throw new Error();
   },
   getNextPuzzle: () => {},
@@ -52,7 +52,7 @@ const PuzzleMode: React.FC<PuzzleModeProps> = ({
 }) => {
   /** PUZZLE CODE */
   const [puzzle, setPuzzle] = useState<Puzzle | undefined>(initialPuzzle);
-  const [rating, setRating] = useState<RatingHolder>(initialRating);
+  const [rating, setRating] = useState<Rating>(initialRating);
   const [similar, setSimilar] = useState<Puzzle[] | undefined>(initialSimilar);
   const [loading, setLoading] = useState(false);
 
@@ -69,9 +69,9 @@ const PuzzleMode: React.FC<PuzzleModeProps> = ({
   // submit the puzzle success/failure to the server
   const submitNextPuzzle = (
     success: boolean,
-    prv: RatingHolder,
+    prv: Rating,
     time: number
-  ): Promise<RatingHolder> =>
+  ): Promise<Rating> =>
     fetch(`/api/puzzle/submit`, {
       method: 'POST',
       body: JSON.stringify({
@@ -83,7 +83,7 @@ const PuzzleMode: React.FC<PuzzleModeProps> = ({
       }),
     })
       .then((response) => response.text())
-      .then((s) => JSON.parse(s) as RatingHolder);
+      .then((s) => JSON.parse(s) as Rating);
 
   // get the next puzzle
   const getNextPuzzle = () => {

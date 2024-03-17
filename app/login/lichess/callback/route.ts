@@ -77,10 +77,7 @@ export async function GET(request: Request): Promise<Response> {
     const userRating = await fetchLichessRating(user);
     await RatingColl.create({
       username: user.username,
-      rating: userRating.rating,
-      ratingDeviation: userRating.ratingDeviation,
-      volatility: userRating.volatility,
-      numberOfResults: userRating.numberOfResults,
+      ...userRating,
     });
     await InitRatingColl.create({
       username: user.username,

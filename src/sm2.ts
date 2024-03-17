@@ -1,6 +1,5 @@
 import { TimeThemeColl } from '@/models/TimeThemeColl';
-import Rating from '@/src/rating/GlickoV2Rating';
-import { RatingHolder, toHolder } from './rating/getRating';
+import { Rating } from './rating/getRating';
 
 const MAX_CORRECT_TIME: number = 45;
 const DELTA_SCALE_FACTOR: number = 6;
@@ -56,7 +55,7 @@ export const calculateSm2 = (
   return { interval, repetitions, easeFactor };
 };
 
-const applySm2 = (elos: Map<string, RatingHolder>): Map<string, number> => {
+const applySm2 = (elos: Map<string, Rating>): Map<string, number> => {
   const ratings = Array.from(elos.values(), (r) => r.rating);
   const min = Math.min(...ratings);
   const max = Math.max(...ratings);
@@ -96,7 +95,7 @@ const sm2RandomThemeFromRatingMap = async (
   usernname: string,
   oldElos: Map<string, Rating>
 ): Promise<string> => {
-  const result = new Map<string, RatingHolder>();
+  const result = new Map<string, Rating>();
   for (const [theme, v] of oldElos) {
     const entry = await TimeThemeColl.findOne({
       username: usernname,
@@ -108,7 +107,7 @@ const sm2RandomThemeFromRatingMap = async (
       v.rating = scaleGlickoByTime(v.rating, t);
       console.log(`Scaled rating: ${v.rating}`);
     }
-    result.set(theme, toHolder(v));
+    result.set(theme, v);
   }
   console.log(result);
   return proportionallyRandomTheme(applySm2(result));
