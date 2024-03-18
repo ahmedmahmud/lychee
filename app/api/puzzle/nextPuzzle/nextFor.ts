@@ -11,18 +11,14 @@ import sm2RandomThemeFromRatingMap from '../../../../src/sm2';
 import frequentiallyRandomTheme, { isIrrelevant } from './themeGenerator';
 import { ActivePuzzleColl } from '@/models/ActivePuzzle';
 import { booleanWithProbability, toGroupId } from '@/lib/utils';
-import {
-  nextLeitnerReview,
-  nextThemedLeitnerReview,
-} from '@/src/LeitnerIntance';
+import { nextLeitnerReview } from '@/src/LeitnerIntance';
 import { similarBatchForCompromised } from '../similarBatch/similarBatchFor';
-import { assert } from 'console';
 
 const MAX_REPS: number = 12;
 const MAX_COMPROMISE: number = 3;
 
 const LEITNER_PROBABILITY: number = 0.2;
-const MIN_CANDIDATES: number = 10; // TODO: Increase this.
+const MIN_CANDIDATES: number = 10;
 
 export type PuzzleWithUserRating = {
   puzzle: Puzzle | undefined;
@@ -98,7 +94,7 @@ const nextPuzzleRepetitions = async (
   exceptions: any
 ): Promise<Puzzle | undefined> => {
   if (reps == MAX_REPS) {
-    // throw new Error('Maximum repetitions reached during puzzle selection');
+    console.log('Maximum repetitions reached during puzzle selection');
     return undefined;
   }
   let rating = userRating;
@@ -140,16 +136,14 @@ const nextThemedPuzzlesForRepetitions = async (
   expceptions: any
 ): Promise<Puzzle | undefined> => {
   if (reps == MAX_REPS) {
-    // throw new Error('Maximum repetitions reached during puzzle selection');
+    console.log('Maximum repetitions reached during puzzle selection');
     return undefined;
   }
-
   const theme = themeGroup[Math.floor(Math.random() * themeGroup.length)];
   // If theme is present in rating map, use its rating for adaptive difficulty
   // selection. Otherwise, use user's rating.
   const rating = ratingMap.get(theme)?.rating || userRating;
   console.log(`Using rating: ${rating} for theme: ${theme}`);
-
   const p = await nextPuzzleForThemeAndRating(theme, rating, expceptions);
   if (p) {
     console.log(`Found grouped theme ${theme} after ${reps} reps.`);
@@ -170,160 +164,100 @@ const nextPuzzleFor = async (
   themeGroup: string[] = []
 ): Promise<PuzzleWithUserRating> =>
   getExistingUserRating(user).then(async (rating) => {
-    const group = themeGroup.length > 0 ? toGroupId(themeGroup) : undefined;
+    const groupId = toGroupId(themeGroup);
 
     if (!woodpecker) {
       const activePuzzle = await ActivePuzzleColl.findOne({
         username: user.username,
       });
       if (activePuzzle) {
-        if (
-          (group && activePuzzle.groupID !== group) ||
-          (!group && activePuzzle.groupID)
-        ) {
-          // TODO: Maybe preserve previous active puzzle? But we need to be
-          // careful in case this mode solves that puzzle, then back in
-          // normal mode user solves puzzle again - then errors!
-          console.log('Deleting different active puzzle');
+        if (groupId !== activePuzzle.groupID) {
+          // NB: Preserving active puzzles per-modes is tricky. We can't permit this mode solving that puzzle,
+          // then back in previous mode user solving it again.
           await ActivePuzzleColl.deleteOne({ username: user.username });
         } else {
-          let similar: Puzzle[] = [];
-          if (activePuzzle.isReview) {
-            const reviewee = JSON.parse(activePuzzle.reviewee) as Puzzle;
-            similar = [reviewee];
-          }
-          console.log(similar);
           console.log('Found active puzzle');
           return {
             puzzle: JSON.parse(activePuzzle.puzzle) as Puzzle,
             rating: rating,
-            similar: similar,
+            similar: activePuzzle.reviewee
+              ? [JSON.parse(activePuzzle.reviewee) as Puzzle]
+              : [],
           };
         }
       }
     }
 
-    // TODO: Iterate to better handle repeat avoidance.
-    const exceptions: string[] = await getUserSolvedPuzzleIDs(user);
-
-    if (!woodpecker && booleanWithProbability(LEITNER_PROBABILITY)) {
-      console.log('Trying to use Leitner...');
-      const puzzleToReview = group
-        ? await nextThemedLeitnerReview(user, group)
-        : await nextLeitnerReview(user);
-      if (puzzleToReview) {
-        console.log(
-          `Worked! Puzzle Id: ${puzzleToReview.PuzzleId} from Leitner, tags: ${puzzleToReview.hierarchy_tags}`
-        );
-        const [similarPuzzle] = await similarBatchForCompromised(
-          user,
-          [puzzleToReview],
-          clampRating(rating.rating),
-          exceptions,
-          MIN_CANDIDATES, // TODO: Increase this, or maybe start compromise at 3 instead, to use wider similarity radius? Unsure.
-          false
-        );
-
-        console.log(
-          `Got similar puzzle with tags ${similarPuzzle.hierarchy_tags} and line ${similarPuzzle.Moves}`
-        );
-
-        if (group) {
-          await ActivePuzzleColl.updateOne(
-            { username: user.username },
-            {
-              username: user.username,
-              puzzle: JSON.stringify(similarPuzzle),
-              isReview: true,
-              reviewee: JSON.stringify(puzzleToReview),
-              groupID: group,
-            },
-            { upsert: true }
+    const result = await (async () => {
+      // TODO: Iterate to better handle repeat avoidance.
+      const exceptions: string[] = await getUserSolvedPuzzleIDs(user);
+      if (!woodpecker && booleanWithProbability(LEITNER_PROBABILITY)) {
+        console.log('Trying to use Leitner...');
+        const puzzleToReview = await nextLeitnerReview(user, groupId);
+        if (puzzleToReview) {
+          console.log(
+            `Worked! Puzzle Id: ${puzzleToReview.PuzzleId} from Leitner, tags: ${puzzleToReview.hierarchy_tags}`
           );
-        } else {
-          await ActivePuzzleColl.updateOne(
-            { username: user.username },
-            {
-              username: user.username,
-              puzzle: JSON.stringify(similarPuzzle),
-              isReview: true,
-              reviewee: JSON.stringify(puzzleToReview),
-            },
-            { upsert: true }
+          const [similarPuzzle] = await similarBatchForCompromised(
+            user,
+            [puzzleToReview],
+            clampRating(rating.rating),
+            exceptions,
+            MIN_CANDIDATES,
+            false
           );
+          console.log(
+            `Got similar puzzle with tags ${similarPuzzle.hierarchy_tags} and line ${similarPuzzle.Moves}`
+          );
+          return {
+            puzzle: similarPuzzle,
+            similar: [puzzleToReview],
+          };
         }
-        return {
-          puzzle: similarPuzzle,
-          similar: [puzzleToReview],
-          rating: rating,
-        };
       }
-    }
-
-    // NB: The persisted rating map may contain irrelevant themes, but we don't
-    // want to include these for nextPuzzle / SM2, so we filter them out below.
-    const ratingMap = await getThemeRatings(user, true);
-
-    if (group) {
-      const puzzle = await nextThemedPuzzlesForRepetitions(
-        rating.rating,
-        ratingMap,
-        0,
-        themeGroup,
-        exceptions
-      );
-      if (puzzle) {
-        console.log(
-          `Got puzzle with themes ${puzzle.Themes} and rating ${puzzle.Rating} and line ${puzzle.Moves}`
-        );
-        assert(!woodpecker);
-        await ActivePuzzleColl.updateOne(
-          { username: user.username },
-          {
-            username: user.username,
-            puzzle: JSON.stringify(puzzle),
-            isReview: false,
-            groupID: group,
-          },
-          { upsert: true }
-        );
-      }
+      // NB: The persisted rating map may contain irrelevant themes, but we don't
+      // want to include these for nextPuzzle / SM2, so we filter them out below.
+      const ratingMap = await getThemeRatings(user, true);
       return {
-        puzzle: puzzle,
-        rating: rating,
+        puzzle: groupId
+          ? await nextThemedPuzzlesForRepetitions(
+              rating.rating,
+              ratingMap,
+              0,
+              themeGroup,
+              exceptions
+            )
+          : await nextPuzzleRepetitions(
+              user.username,
+              rating.rating,
+              0,
+              ratingMap,
+              exceptions
+            ),
       };
-    }
+    })();
 
-    const puzzle = await nextPuzzleRepetitions(
-      user.username,
-      rating.rating,
-      0,
-      ratingMap,
-      exceptions
-    );
-
-    if (puzzle) {
+    if (result.puzzle) {
       console.log(
-        `Got puzzle with themes ${puzzle.Themes} and rating ${puzzle.Rating} and line ${puzzle.Moves}`
+        `Got puzzle with themes ${result.puzzle.Themes} and rating ${result.puzzle.Rating} and line ${result.puzzle.Moves}`
       );
-
+      // Persist selection as active puzzle.
       if (!woodpecker) {
         await ActivePuzzleColl.updateOne(
           { username: user.username },
           {
             username: user.username,
-            puzzle: JSON.stringify(puzzle),
-            isReview: false,
+            puzzle: JSON.stringify(result.puzzle),
+            reviewee: result.similar
+              ? JSON.stringify(result.similar[0])
+              : undefined,
+            groupID: groupId,
           },
           { upsert: true }
         );
       }
     }
-
-    return {
-      puzzle: puzzle,
-      rating: rating,
-    };
+    return { ...result, rating };
   });
 
 export default nextPuzzleFor;

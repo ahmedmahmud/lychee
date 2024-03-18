@@ -1,5 +1,4 @@
 import { booleanWithProbability } from '@/lib/utils';
-import { LeitnerColl } from '@/models/LeitnerColl';
 import { ThemedLeitnerColl } from '@/models/ThemedLeitnerColl';
 import { Puzzle } from '@/types/lichess-api';
 import { User } from 'lucia';
@@ -16,7 +15,7 @@ interface LeitnerInstance {
   boxB: Array<Puzzle>;
 }
 
-const findThemedLeitner = async (
+const findLeitner = async (
   user: User,
   groupID: string
 ): Promise<LeitnerInstance | undefined> => {
@@ -28,13 +27,6 @@ const findThemedLeitner = async (
     return undefined;
   }
   return { boxA: leitner.boxA, boxB: leitner.boxB };
-};
-
-const findLeitner = async (
-  user: User
-): Promise<LeitnerInstance | undefined> => {
-  const leitner = await LeitnerColl.findOne({ username: user.username });
-  return leitner ? { boxA: leitner.boxA, boxB: leitner.boxB } : undefined;
 };
 
 const nextPuzzle = ({ boxA, boxB }: LeitnerInstance): Puzzle | undefined => {
@@ -90,20 +82,10 @@ const updateCorrect = (
 };
 
 export const nextLeitnerReview = async (
-  user: User
-): Promise<Puzzle | undefined> => {
-  const leitner = await findLeitner(user);
-  if (!leitner) {
-    return undefined;
-  }
-  return nextPuzzle(leitner);
-};
-
-export const nextThemedLeitnerReview = async (
   user: User,
   groupID: string
 ): Promise<Puzzle | undefined> => {
-  const leitner = await findThemedLeitner(user, groupID);
+  const leitner = await findLeitner(user, groupID);
   if (!leitner) {
     return undefined;
   }
@@ -114,42 +96,10 @@ export const updateLeitner = async (
   user: User,
   puzzle: Puzzle,
   correct: boolean,
-  time: number
-): Promise<void> => {
-  const leitner = await findLeitner(user);
-  if (!leitner) {
-    if (!correct) {
-      // We should initialise a default Leitner instance with this puzzle in Box A.
-      await LeitnerColl.create({
-        username: user.username,
-        boxA: [puzzle],
-        boxB: [],
-      });
-    }
-    return;
-  }
-  console.log(
-    `Before update: boxA = ${leitner.boxA.map((puzzle) => puzzle.PuzzleId)}, boxB = ${leitner.boxB.map((puzzle) => puzzle.PuzzleId)}`
-  );
-  if (correct) {
-    updateCorrect(leitner, puzzle, time);
-  } else {
-    updateIncorrect(leitner, puzzle);
-  }
-  console.log(
-    `After update: boxA = ${leitner.boxA.map((puzzle) => puzzle.PuzzleId)}, boxB = ${leitner.boxB.map((puzzle) => puzzle.PuzzleId)}`
-  );
-  await LeitnerColl.updateOne({ username: user.username }, leitner);
-};
-
-export const updateThemedLeitner = async (
-  user: User,
-  puzzle: Puzzle,
-  correct: boolean,
   groupID: string,
   time: number
 ): Promise<void> => {
-  const leitner = await findThemedLeitner(user, groupID);
+  const leitner = await findLeitner(user, groupID);
   if (!leitner) {
     if (!correct) {
       // We should initialise a default Leitner instance with this puzzle in Box A.

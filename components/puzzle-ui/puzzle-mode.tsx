@@ -1,4 +1,5 @@
 'use client';
+
 import { Puzzle } from '@/types/lichess-api';
 import React, { useState, useEffect } from 'react';
 import PuzzleBoard from './puzzle-board';

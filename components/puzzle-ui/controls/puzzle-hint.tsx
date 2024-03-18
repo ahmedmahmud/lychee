@@ -5,7 +5,6 @@ import StaticBoard from '../static-board';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { capitalize } from '@/lib/utils';
-import { isRelevant } from '@/app/api/puzzle/nextPuzzle/themeGenerator';
 
 const hintMode = (similar: Puzzle[] | undefined, themes: string[]) => {
   return (

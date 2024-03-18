@@ -1,11 +1,10 @@
 import mongoose, { Schema } from 'mongoose';
 
 const activePuzzleSchema = new Schema({
-  username: String,
-  puzzle: String,
-  isReview: Boolean,
-  reviewee: String, // Original puzzle, if it's a similar one. TODO: Redundancy with above.
-  groupID: String,
+  username: { type: String, required: true },
+  puzzle: { type: String, required: true },
+  reviewee: String, // Original puzzle, if it's a similar one.
+  groupID: { type: String, required: true },
 });
 
 // Index on username for fast lookups.
